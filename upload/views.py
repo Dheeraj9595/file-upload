@@ -64,8 +64,10 @@ def upload_book(request):  # Upload the book with title, author and file.
         # cover = request.FILES["coverpage"]
         # Book.objects.create()
         form = BookForm(request.POST,
-                        request.FILES)  # As it is similar like request['name'], POST willl give the title and author & FILES give the uploaded file
-        if form.is_valid():  # Data is cleaned in three processes, if data is not cleaned the it raises validation error.
+                        request.FILES)  # As it is similar like request['name'], POST willl give the title and author
+        # & FILES give the uploaded file
+        if form.is_valid():  # Data is cleaned in three processes, if data is not cleaned the it raises validation
+            # error.
             form.save()
             return redirect('book_list')  # redirected towards book_list function where we wil get all the books.
     else:
@@ -78,7 +80,8 @@ def delete_book(request, pk):
         book = Book.objects.get(pk=pk)
 
         # Customised
-        book.PDF.delete()  # For deleting the file or coverpage from localmachine as the only name will be deleted in database.
+        book.PDF.delete()  # For deleting the file or coverpage from localmachine as the only name will be deleted in
+        # database.
         book.coverpage.delete()
 
         # always keep after media deletion
@@ -119,7 +122,8 @@ class DeleteBookView(DeleteView):
 
         success_url = self.get_success_url()
         # Customised
-        self.object.PDF.delete()  # For deleting the file or coverpage from localmachine as the only name will be deleted in database.
+        self.object.PDF.delete()  # For deleting the file or coverpage from localmachine as the only name will be
+        # deleted in database.
         if self.object.coverpage:
             self.object.coverpage.delete()
         self.object.delete()
@@ -174,5 +178,3 @@ def csv_read(request):
         return render(request, 'read.html', {'data': data})
     return render(request, 'read_csv.html')
 
-
-from django.shortcuts import render
