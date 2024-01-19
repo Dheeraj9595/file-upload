@@ -33,16 +33,27 @@ def upload(request):  # fbv  # httprequest
 
 from .forms import BookForm
 
+# def book_list(request):
+#     books = Book.objects.all()
+#     return render(request, 'book_list.html', {'books': books})
+
+
+from django.db.models import Q
+from .models import Book
+
 
 def book_list(request):
-    books = Book.objects.all()
-    return render(request, 'book_list.html', {'books': books})
+    query = request.GET.get('q', '')
 
+    # If the query is empty, show all books; otherwise, filter based on the query
+    if query:
+        # Use Q objects to perform a case-insensitive search on title and author fields
+        books = Book.objects.filter(Q(title__icontains=query) | Q(author__icontains=query))
+    else:
+        # If no query, show all books
+        books = Book.objects.all()
 
-def book_list_new(request):
-    query = request.Get.get('q', '')
-    books = Book.objects.filter(Book(title__icontains=query) | Book(author__icontains=query))
-    return render(request, 'book_list_new.html', {'books': books, 'query': query})
+    return render(request, 'book_list.html', {'books': books, 'query': query})
 
 
 # try below function without using django forms

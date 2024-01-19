@@ -11,6 +11,16 @@
         <a href="{% url 'delete_all_book' %}" class="btn btn-danger">Delete All Books</a>
 
     </p>
+
+      {# Search Form #}
+    <form method="get" action="{% url 'book_list' %}" class="form-inline mb-3">
+        <div class="form-group">
+            <label for="searchInput">Search:</label>
+            <input type="text" class="form-control" id="searchInput" name="q" value="{{ query }}" placeholder="Enter title or author">
+        </div>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+
     {% endblock %}
 
     <table class="table mb-0" >
