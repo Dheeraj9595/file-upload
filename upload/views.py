@@ -1,11 +1,14 @@
 from .importer import *
 from .models import Book
 import csv
+
+
 # Create your views here.
 
 
 class Home(TemplateView):  # class based view
     template_name = 'home.html'
+
 
 # simple upload
 def upload(request):  # fbv  # httprequest  
@@ -21,7 +24,8 @@ def upload(request):  # fbv  # httprequest
         print(file_store.url(name))
         context['url'] = file_store.url(name)  # {"url": /media/no_pass_meetings%20(1)%20(1).csv}
         # print(context)
-    return render(request, 'upload.html', context) # url:file_link
+    return render(request, 'upload.html', context)  # url:file_link
+
 
 #########################################################################
 
@@ -29,17 +33,27 @@ def upload(request):  # fbv  # httprequest
 
 from .forms import BookForm
 
+
 def book_list(request):
     books = Book.objects.all()
-    return render(request, 'book_list.html', {'books' : books})
+    return render(request, 'book_list.html', {'books': books})
+
+
+def book_list_new(request):
+    query = request.Get.get('q', '')
+    books = Book.objects.filter(Book(title__icontains=query) | Book(author__icontains=query))
+    return render(request, 'book_list_new.html', {'books': books, 'query': query})
+
+
 # try below function without using django forms
-def upload_book(request):   # Upload the book with title, author and file.
+def upload_book(request):  # Upload the book with title, author and file.
     if request.method == 'POST':
         # title = request.POST.get("title")   # 
         # pdf = request.FILES["pdf"]
         # cover = request.FILES["coverpage"]
         # Book.objects.create()
-        form = BookForm(request.POST, request.FILES)   # As it is similar like request['name'], POST willl give the title and author & FILES give the uploaded file
+        form = BookForm(request.POST,
+                        request.FILES)  # As it is similar like request['name'], POST willl give the title and author & FILES give the uploaded file
         if form.is_valid():  # Data is cleaned in three processes, if data is not cleaned the it raises validation error.
             form.save()
             return redirect('book_list')  # redirected towards book_list function where we wil get all the books.
@@ -47,16 +61,17 @@ def upload_book(request):   # Upload the book with title, author and file.
         form = BookForm()
         return render(request, 'upload_book.html', {'form': form})
 
+
 def delete_book(request, pk):
     if request.method == 'POST':
         book = Book.objects.get(pk=pk)
-        
-        #Customised
-        book.PDF.delete()             # For deleting the file or coverpage from localmachine as the only name will be deleted in database.
+
+        # Customised
+        book.PDF.delete()  # For deleting the file or coverpage from localmachine as the only name will be deleted in database.
         book.coverpage.delete()
 
         # always keep after media deletion
-        book.delete() # db delete
+        book.delete()  # db delete
     return redirect('book_list')
 
 
@@ -66,18 +81,18 @@ from django.views.generic import ListView, CreateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
 from django.shortcuts import HttpResponseRedirect
 
-class BookListView(ListView):   # All methods are built-in in ListView
+
+class BookListView(ListView):  # All methods are built-in in ListView
     model = Book
     template_name = 'class_book_list.html'
-    context_object_name = 'books'   # This object name is passed to html page.
+    context_object_name = 'books'  # This object name is passed to html page.
 
 
 class UploadBookView(CreateView):
-    model = Book 
-    form_class = BookForm   # Or u can directly put the fields='__all__'
-    success_url = reverse_lazy('class_book_list')   # It will redirect to class_book_list url.
+    model = Book
+    form_class = BookForm  # Or u can directly put the fields='__all__'
+    success_url = reverse_lazy('class_book_list')  # It will redirect to class_book_list url.
     template_name = 'class_upload_book.html'
-
 
 
 class DeleteBookView(DeleteView):
@@ -92,13 +107,12 @@ class DeleteBookView(DeleteView):
         self.object = self.get_object()
 
         success_url = self.get_success_url()
-        #Customised
-        self.object.PDF.delete()     # For deleting the file or coverpage from localmachine as the only name will be deleted in database.
+        # Customised
+        self.object.PDF.delete()  # For deleting the file or coverpage from localmachine as the only name will be deleted in database.
         if self.object.coverpage:
             self.object.coverpage.delete()
         self.object.delete()
         return HttpResponseRedirect(success_url)
-
 
 
 def delete_all_book(request):
@@ -113,25 +127,26 @@ def delete_all_book(request):
     # return render(request, 'book_list.html')
     return redirect('book_list')
 
-from django.shortcuts import (get_object_or_404, 
-                              render, 
+
+from django.shortcuts import (get_object_or_404,
+                              render,
                               HttpResponseRedirect)
 
-def edit(request, pk): 
-    obj = get_object_or_404(Book, id = pk) 
+
+def edit(request, pk):
+    obj = get_object_or_404(Book, id=pk)
     print('@@@@@')
     # pass the object as instance in form 
-    form = BookForm(request.POST or None, request.FILES or None, instance = obj) 
-  
+    form = BookForm(request.POST or None, request.FILES or None, instance=obj)
+
     # save the data from the form and 
     # redirect to detail_view 
-    if form.is_valid(): 
-        form.save() 
-        return redirect('book_list') 
-  
-    # add form dictionary to context 
-    return render(request, "upload_book.html", {'form': form}) 
+    if form.is_valid():
+        form.save()
+        return redirect('book_list')
 
+        # add form dictionary to context
+    return render(request, "upload_book.html", {'form': form})
 
 
 # def csv_read(request):
@@ -150,5 +165,3 @@ def csv_read(request):
 
 
 from django.shortcuts import render
-
-

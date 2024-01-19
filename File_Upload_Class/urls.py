@@ -24,6 +24,7 @@ urlpatterns = [
 
     path('upload/', upload, name='upload'),
     path('book-list/', book_list, name='book_list'),
+    path('book-list-new/', book_list_new, name='book_list_new'),
 
     path('books/upload-book/', upload_book, name='upload_book'),
     path('delete-book/<int:pk>/', delete_book, name='delete_book'),
