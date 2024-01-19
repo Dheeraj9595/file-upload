@@ -1,0 +1,38 @@
+{% block content %}
+
+<table class="table table-striped">
+    {% for row in data %}
+        <tr>
+        {% for cell in row %}
+            <td>{{ cell }}</td>
+        {% endfor %}
+        </tr>
+    {% endfor %}
+    </table>
+    
+
+
+
+
+
+    <style>
+        table {
+            background-color:rgb(255, 252, 249);
+            border-collapse: collapse;
+            width: 100%;
+        }
+        td, th {
+            
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            
+        }
+        </style>
+        
+
+    
+{% endblock %}

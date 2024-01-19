@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    {% block content_header %}
+
+    <h2>Books(Class-Based View)</h2><br>
+    <p>
+        
+        <a href="{% url 'class_book_upload'%}" class="btn btn-success">Upload Book</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+    </p>
+
+    {% endblock %}
+
+    <table class="table mb-0" >
+        <thead>
+            <tr>
+                <th>Sr.No.</th>
+                <th>Cover</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Download</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for book in books %}
+                <tr>
+                    <td>{{book.id}}</td>
+                    <td>
+                        {% if book.coverpage %} 
+                            <img src="{{ book.coverpage.url}}" alt="{{book.title}}" style="width:100px">
+                        {% else %}
+                            <span class="text-muted">No Coverpage</span>
+                        {% endif %}
+
+                    </td>
+                    
+
+                    <td>{{book.title}}</td>
+                    <td>{{book.author}}</td>
+                    <td>
+                        <a href="{{book.PDF.url}}" class="btn btn-primary btn-sm" target="_blank">Download PDF</a>
+                    </td>
+                    
+
+                    <td>
+                        <form method="post" action="{% url 'class_delete_book' book.pk %}">
+                         {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        </form>
+                    </td>
+                  
+
+                    
+                </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
+
+{% endblock %}

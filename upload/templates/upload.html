@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+<h2 style="color: rgb(17, 75, 108);"> Upload</h2><br><hr>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="document"><br><br>
+        <button type="submit" class="btn btn-Primary">Upload File</button>
+    </form>
+
+    {% if url %}
+
+    <p>Uploaded File: <a href="{{url}}">Click Here To Open Last Uploaded File</a></p>
+
+    {% endif %}
+{% endblock %}
