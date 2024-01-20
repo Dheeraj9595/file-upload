@@ -1,0 +1,354 @@
+Index: upload/views.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from .importer import *\r\nfrom .models import Book\r\nimport csv\r\n# Create your views here.\r\n\r\n\r\nclass Home(TemplateView):  # class based view\r\n    template_name = 'home.html'\r\n\r\n# simple upload\r\ndef upload(request):  # fbv  # httprequest  \r\n    context = {}\r\n    # print(request.method)\r\n    # print(request.user)\r\n    if request.method == 'POST':\r\n        uploaded_file = request.FILES['document']  # name given in html file - in form\r\n        # print(uploaded_file.name)\r\n        # print(uploaded_file.size)\r\n        file_store = FileSystemStorage()  # Advantage of FileSystemStorage is that dont having the overwrite risk. It wil rename while saving.\r\n        name = file_store.save(uploaded_file.name, uploaded_file)\r\n        print(file_store.url(name))\r\n        context['url'] = file_store.url(name)  # {\"url\": /media/no_pass_meetings%20(1)%20(1).csv}\r\n        # print(context)\r\n    return render(request, 'upload.html', context) # url:file_link\r\n\r\n#########################################################################\r\n\r\n# Function based view\r\n\r\nfrom .forms import BookForm\r\n\r\ndef book_list(request):\r\n    books = Book.objects.all()\r\n    return render(request, 'book_list.html', {'books' : books})\r\n# try below function without using django forms\r\ndef upload_book(request):   # Upload the book with title, author and file.\r\n    if request.method == 'POST':\r\n        # title = request.POST.get(\"title\")   # \r\n        # pdf = request.FILES[\"pdf\"]\r\n        # cover = request.FILES[\"coverpage\"]\r\n        # Book.objects.create()\r\n        form = BookForm(request.POST, request.FILES)   # As it is similar like request['name'], POST willl give the title and author & FILES give the uploaded file\r\n        if form.is_valid():  # Data is cleaned in three processes, if data is not cleaned the it raises validation error.\r\n            form.save()\r\n            return redirect('book_list')  # redirected towards book_list function where we wil get all the books.\r\n    else:\r\n        form = BookForm()\r\n        return render(request, 'upload_book.html', {'form': form})\r\n\r\ndef delete_book(request, pk):\r\n    if request.method == 'POST':\r\n        book = Book.objects.get(pk=pk)\r\n        \r\n        #Customised\r\n        book.PDF.delete()             # For deleting the file or coverpage from localmachine as the only name will be deleted in database.\r\n        book.coverpage.delete()\r\n\r\n        # always keep after media deletion\r\n        book.delete() # db delete\r\n    return redirect('book_list')\r\n\r\n\r\n# class based views\r\n\r\nfrom django.views.generic import ListView, CreateView, DeleteView, TemplateView\r\nfrom django.urls import reverse_lazy\r\nfrom django.shortcuts import HttpResponseRedirect\r\n\r\nclass BookListView(ListView):   # All methods are built-in in ListView\r\n    model = Book\r\n    template_name = 'class_book_list.html'\r\n    context_object_name = 'books'   # This object name is passed to html page.\r\n\r\n\r\nclass UploadBookView(CreateView):\r\n    model = Book \r\n    form_class = BookForm   # Or u can directly put the fields='__all__'\r\n    success_url = reverse_lazy('class_book_list')   # It will redirect to class_book_list url.\r\n    template_name = 'class_upload_book.html'\r\n\r\n\r\n\r\nclass DeleteBookView(DeleteView):\r\n    model = Book\r\n    success_url = reverse_lazy(\"class_book_list\")\r\n\r\n    def delete(self, request, *args, **kwargs):\r\n        \"\"\"\r\n        Call the delete() method on the fetched object and then redirect to the\r\n        success URL.\r\n        \"\"\"\r\n        self.object = self.get_object()\r\n\r\n        success_url = self.get_success_url()\r\n        #Customised\r\n        self.object.PDF.delete()     # For deleting the file or coverpage from localmachine as the only name will be deleted in database.\r\n        if self.object.coverpage:\r\n            self.object.coverpage.delete()\r\n        self.object.delete()\r\n        return HttpResponseRedirect(success_url)\r\n\r\n\r\n\r\ndef delete_all_book(request):\r\n    all_books = Book.objects.all()\r\n    print(\"In delete all book\")\r\n    print(all_books)\r\n    print(\"Inside delete all book\")\r\n    for book in all_books:\r\n        book.PDF.delete()\r\n        book.coverpage.delete()\r\n        book.delete()\r\n    # return render(request, 'book_list.html')\r\n    return redirect('book_list')\r\n\r\nfrom django.shortcuts import (get_object_or_404, \r\n                              render, \r\n                              HttpResponseRedirect)\r\n\r\ndef edit(request, pk): \r\n    obj = get_object_or_404(Book, id = pk) \r\n    print('@@@@@')\r\n    # pass the object as instance in form \r\n    form = BookForm(request.POST or None, request.FILES or None, instance = obj) \r\n  \r\n    # save the data from the form and \r\n    # redirect to detail_view \r\n    if form.is_valid(): \r\n        form.save() \r\n        return redirect('book_list') \r\n  \r\n    # add form dictionary to context \r\n    return render(request, \"upload_book.html\", {'form': form}) \r\n\r\n\r\n\r\n# def csv_read(request):\r\n#     with open(r'S:\\django\\projects\\File_Upload_Class\\media\\product.csv', 'r') as file:\r\n#         reader = csv.reader(file)\r\n#         data = list(reader)\r\n#     return render(request, 'read.html', {'data': data})\r\n\r\ndef csv_read(request):\r\n    if request.method == 'POST':\r\n        file = request.FILES['csv_file']\r\n        reader = csv.reader(file.read().decode('utf-8').splitlines())\r\n        data = list(reader)\r\n        return render(request, 'read.html', {'data': data})\r\n    return render(request, 'read_csv.html')\r\n\r\n\r\nfrom django.shortcuts import render\r\n\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/upload/views.py b/upload/views.py
+--- a/upload/views.py	
++++ b/upload/views.py	
+@@ -1,12 +1,15 @@
+ from .importer import *
+ from .models import Book
+ import csv
++
++
+ # Create your views here.
+ 
+ 
+ class Home(TemplateView):  # class based view
+     template_name = 'home.html'
+ 
++
+ # simple upload
+ def upload(request):  # fbv  # httprequest  
+     context = {}
+@@ -21,25 +24,36 @@
+         print(file_store.url(name))
+         context['url'] = file_store.url(name)  # {"url": /media/no_pass_meetings%20(1)%20(1).csv}
+         # print(context)
+-    return render(request, 'upload.html', context) # url:file_link
++    return render(request, 'upload.html', context)  # url:file_link
+ 
++
+ #########################################################################
+ 
+ # Function based view
+ 
+ from .forms import BookForm
+ 
++
+ def book_list(request):
+     books = Book.objects.all()
+-    return render(request, 'book_list.html', {'books' : books})
++    return render(request, 'book_list.html', {'books': books})
++
++
++def book_list_new(request):
++    query = request.Get.get('q', '')
++    books = Book.objects.filter(Book(title__icontains=query) | Book(author__icontains=query))
++    return render(request, 'book_list_new.html', {'books': books, 'query': query})
++
++
+ # try below function without using django forms
+-def upload_book(request):   # Upload the book with title, author and file.
++def upload_book(request):  # Upload the book with title, author and file.
+     if request.method == 'POST':
+         # title = request.POST.get("title")   # 
+         # pdf = request.FILES["pdf"]
+         # cover = request.FILES["coverpage"]
+         # Book.objects.create()
+-        form = BookForm(request.POST, request.FILES)   # As it is similar like request['name'], POST willl give the title and author & FILES give the uploaded file
++        form = BookForm(request.POST,
++                        request.FILES)  # As it is similar like request['name'], POST willl give the title and author & FILES give the uploaded file
+         if form.is_valid():  # Data is cleaned in three processes, if data is not cleaned the it raises validation error.
+             form.save()
+             return redirect('book_list')  # redirected towards book_list function where we wil get all the books.
+@@ -47,16 +61,17 @@
+         form = BookForm()
+         return render(request, 'upload_book.html', {'form': form})
+ 
++
+ def delete_book(request, pk):
+     if request.method == 'POST':
+         book = Book.objects.get(pk=pk)
+-        
+-        #Customised
+-        book.PDF.delete()             # For deleting the file or coverpage from localmachine as the only name will be deleted in database.
++
++        # Customised
++        book.PDF.delete()  # For deleting the file or coverpage from localmachine as the only name will be deleted in database.
+         book.coverpage.delete()
+ 
+         # always keep after media deletion
+-        book.delete() # db delete
++        book.delete()  # db delete
+     return redirect('book_list')
+ 
+ 
+@@ -66,20 +81,20 @@
+ from django.urls import reverse_lazy
+ from django.shortcuts import HttpResponseRedirect
+ 
+-class BookListView(ListView):   # All methods are built-in in ListView
++
++class BookListView(ListView):  # All methods are built-in in ListView
+     model = Book
+     template_name = 'class_book_list.html'
+-    context_object_name = 'books'   # This object name is passed to html page.
++    context_object_name = 'books'  # This object name is passed to html page.
+ 
+ 
+ class UploadBookView(CreateView):
+-    model = Book 
+-    form_class = BookForm   # Or u can directly put the fields='__all__'
+-    success_url = reverse_lazy('class_book_list')   # It will redirect to class_book_list url.
++    model = Book
++    form_class = BookForm  # Or u can directly put the fields='__all__'
++    success_url = reverse_lazy('class_book_list')  # It will redirect to class_book_list url.
+     template_name = 'class_upload_book.html'
+ 
+ 
+-
+ class DeleteBookView(DeleteView):
+     model = Book
+     success_url = reverse_lazy("class_book_list")
+@@ -92,15 +107,14 @@
+         self.object = self.get_object()
+ 
+         success_url = self.get_success_url()
+-        #Customised
+-        self.object.PDF.delete()     # For deleting the file or coverpage from localmachine as the only name will be deleted in database.
++        # Customised
++        self.object.PDF.delete()  # For deleting the file or coverpage from localmachine as the only name will be deleted in database.
+         if self.object.coverpage:
+             self.object.coverpage.delete()
+         self.object.delete()
+         return HttpResponseRedirect(success_url)
+ 
+ 
+-
+ def delete_all_book(request):
+     all_books = Book.objects.all()
+     print("In delete all book")
+@@ -113,27 +127,28 @@
+     # return render(request, 'book_list.html')
+     return redirect('book_list')
+ 
+-from django.shortcuts import (get_object_or_404, 
+-                              render, 
++
++from django.shortcuts import (get_object_or_404,
++                              render,
+                               HttpResponseRedirect)
+ 
+-def edit(request, pk): 
+-    obj = get_object_or_404(Book, id = pk) 
++
++def edit(request, pk):
++    obj = get_object_or_404(Book, id=pk)
+     print('@@@@@')
+     # pass the object as instance in form 
+-    form = BookForm(request.POST or None, request.FILES or None, instance = obj) 
+-  
++    form = BookForm(request.POST or None, request.FILES or None, instance=obj)
++
+     # save the data from the form and 
+     # redirect to detail_view 
+-    if form.is_valid(): 
+-        form.save() 
+-        return redirect('book_list') 
+-  
+-    # add form dictionary to context 
+-    return render(request, "upload_book.html", {'form': form}) 
++    if form.is_valid():
++        form.save()
++        return redirect('book_list')
++
++        # add form dictionary to context
++    return render(request, "upload_book.html", {'form': form})
+ 
+ 
+-
+ # def csv_read(request):
+ #     with open(r'S:\django\projects\File_Upload_Class\media\product.csv', 'r') as file:
+ #         reader = csv.reader(file)
+@@ -150,5 +165,3 @@
+ 
+ 
+ from django.shortcuts import render
+-
+-
+Index: File_Upload_Class/urls.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\"\"\"File_Upload_Class URL Configuration\r\n\r\nThe `urlpatterns` list routes URLs to views. For more information please see:\r\n    https://docs.djangoproject.com/en/2.0/topics/http/urls/\r\nExamples:\r\nFunction views\r\n    1. Add an import:  from my_app import views\r\n    2. Add a URL to urlpatterns:  path('', views.home, name='home')\r\nClass-based views\r\n    1. Add an import:  from other_app.views import Home\r\n    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')\r\nIncluding another URLconf\r\n    1. Import the include() function: from django.urls import include, path\r\n    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))\r\n\"\"\"\r\nfrom django.contrib import admin\r\nfrom django.urls import path\r\nfrom upload.views import *\r\n\r\n\r\nurlpatterns = [\r\n    path('admin/', admin.site.urls),\r\n    path('', Home.as_view(), name='home'),  # 127.0.0.1:8000/  - Base Url\r\n\r\n    path('upload/', upload, name='upload'),\r\n    path('book-list/', book_list, name='book_list'),\r\n\r\n    path('books/upload-book/', upload_book, name='upload_book'),\r\n    path('delete-book/<int:pk>/', delete_book, name='delete_book'),\r\n\r\n    path('delete-all-books/', delete_all_book, name='delete_all_book'),\r\n    path('books/edit/<int:pk>/', edit, name='edit_book'),\r\n    path('read/', csv_read, name='read'),\r\n\r\n    \r\n    # class based\r\n    path('class/books/', BookListView.as_view(), name='class_book_list'),\r\n    path('class/books/upload/', UploadBookView.as_view(), name='class_book_upload'),\r\n    path('class/books/delete/<int:pk>/', DeleteBookView.as_view(), name='class_delete_book')\r\n\r\n]\r\n\r\n# for i in urlpatterns:\r\n#     print(i)\r\n\r\nfrom django.conf import settings\r\nfrom django.conf.urls.static import static\r\n\r\n\r\nif settings.DEBUG:  # development server only\r\n    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # If u want to see the stored file on server.\r\n\r\n\r\n# 127.0.0.1:8000/media/file_name
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/File_Upload_Class/urls.py b/File_Upload_Class/urls.py
+--- a/File_Upload_Class/urls.py	
++++ b/File_Upload_Class/urls.py	
+@@ -24,6 +24,7 @@
+ 
+     path('upload/', upload, name='upload'),
+     path('book-list/', book_list, name='book_list'),
++    path('book-list-new/', book_list_new, name='book_list_new'),
+ 
+     path('books/upload-book/', upload_book, name='upload_book'),
+     path('delete-book/<int:pk>/', delete_book, name='delete_book'),
+Index: upload/templates/book_list.html
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>{% extends 'base.html' %}\r\n\r\n{% block content %}\r\n\r\n    {% block content_header %}\r\n\r\n    <h2>Books(Function-Based View)</h2><br>\r\n    <p>\r\n        \r\n        <a href=\"/books/upload-book/\" class=\"btn btn-success\">Upload Book</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\r\n        <a href=\"{% url 'delete_all_book' %}\" class=\"btn btn-danger\">Delete All Books</a>\r\n\r\n    </p>\r\n    {% endblock %}\r\n\r\n    <table class=\"table mb-0\" >\r\n        <thead>\r\n            <tr>\r\n                <th>Sr.No.</th>\r\n                <th>Cover</th>\r\n                <th>Title</th>\r\n                <th>Author</th>\r\n                <th>Download</th>\r\n                <th>Edit</th>\r\n                <th>Delete</th>\r\n\r\n            </tr>\r\n        </thead>\r\n\r\n        <tbody>\r\n            {% for book in books %}\r\n                <tr>\r\n                    <td>{{book.id}}</td>\r\n                    <td>\r\n                        {% if book.coverpage %}\r\n                            <img src=\"{{ book.coverpage.url}}\" alt=\"{{book.title}}\" style=\"width:100px\">\r\n                        {% else %}\r\n                            <span class=\"text-muted\">No Coverpage</span>\r\n                        {% endif %}\r\n                    </td>\r\n                    <td>{{book.title}}</td>\r\n                    <td>{{book.author}}</td>\r\n                    <td>\r\n                        <a href=\"{{book.PDF.url}}\" class=\"btn btn-primary btn-sm\" target=\"_blank\">Download PDF</a>\r\n                    </td>\r\n                    <td>\r\n                        <form method=\"post\" action=\"{% url 'edit_book' book.pk %}\">\r\n                         {% csrf_token %}\r\n                        <button type=\"submit\" class=\"btn btn-danger btn-sm\">Edit</button>\r\n                        </form>\r\n                    </td>\r\n                    <td>\r\n                        <form method=\"post\" action=\"{% url 'delete_book' book.pk %}\">\r\n                         {% csrf_token %}\r\n                        <button type=\"submit\" class=\"btn btn-danger btn-sm\">Delete</button>\r\n                        </form>\r\n                    </td>\r\n                </tr>\r\n            {% endfor %}\r\n        </tbody>\r\n\r\n    </table>\r\n\r\n{% endblock %}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/upload/templates/book_list.html b/upload/templates/book_list.html
+--- a/upload/templates/book_list.html	
++++ b/upload/templates/book_list.html	
+@@ -2,63 +2,72 @@
+ 
+ {% block content %}
+ 
+-    {% block content_header %}
++{% block content_header %}
+ 
+-    <h2>Books(Function-Based View)</h2><br>
+-    <p>
+-        
+-        <a href="/books/upload-book/" class="btn btn-success">Upload Book</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+-        <a href="{% url 'delete_all_book' %}" class="btn btn-danger">Delete All Books</a>
++<h2>Books(Function-Based View)</h2><br>
++<p>
++
++    <a href="/books/upload-book/" class="btn btn-success">Upload Book</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
++    <a href="{% url 'delete_all_book' %}" class="btn btn-danger">Delete All Books</a>
+ 
+-    </p>
+-    {% endblock %}
++</p>
++{# Search Form #}
++<form method="get" action="{% url 'book_list' %}" class="form-inline mb-3">
++    <div class="form-group">
++        <label for="searchInput">Search:</label>
++        <input type="text" class="form-control" id="searchInput" name="q" value="{{ query }}"
++               placeholder="Enter title or author">
++    </div>
++    <button type="submit" class="btn btn-primary">Search</button>
++</form>
++{% endblock %}
+ 
+-    <table class="table mb-0" >
+-        <thead>
+-            <tr>
+-                <th>Sr.No.</th>
+-                <th>Cover</th>
+-                <th>Title</th>
+-                <th>Author</th>
+-                <th>Download</th>
+-                <th>Edit</th>
+-                <th>Delete</th>
++<table class="table mb-0">
++    <thead>
++    <tr>
++        <th>Sr.No.</th>
++        <th>Cover</th>
++        <th>Title</th>
++        <th>Author</th>
++        <th>Download</th>
++        <th>Edit</th>
++        <th>Delete</th>
+ 
+-            </tr>
+-        </thead>
++    </tr>
++    </thead>
+ 
+-        <tbody>
+-            {% for book in books %}
+-                <tr>
+-                    <td>{{book.id}}</td>
+-                    <td>
+-                        {% if book.coverpage %}
+-                            <img src="{{ book.coverpage.url}}" alt="{{book.title}}" style="width:100px">
+-                        {% else %}
+-                            <span class="text-muted">No Coverpage</span>
+-                        {% endif %}
+-                    </td>
+-                    <td>{{book.title}}</td>
+-                    <td>{{book.author}}</td>
+-                    <td>
+-                        <a href="{{book.PDF.url}}" class="btn btn-primary btn-sm" target="_blank">Download PDF</a>
+-                    </td>
+-                    <td>
+-                        <form method="post" action="{% url 'edit_book' book.pk %}">
+-                         {% csrf_token %}
+-                        <button type="submit" class="btn btn-danger btn-sm">Edit</button>
+-                        </form>
+-                    </td>
+-                    <td>
+-                        <form method="post" action="{% url 'delete_book' book.pk %}">
+-                         {% csrf_token %}
+-                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+-                        </form>
+-                    </td>
+-                </tr>
+-            {% endfor %}
+-        </tbody>
++    <tbody>
++    {% for book in books %}
++    <tr>
++        <td>{{book.id}}</td>
++        <td>
++            {% if book.coverpage %}
++            <img src="{{ book.coverpage.url}}" alt="{{book.title}}" style="width:100px">
++            {% else %}
++            <span class="text-muted">No Coverpage</span>
++            {% endif %}
++        </td>
++        <td>{{book.title}}</td>
++        <td>{{book.author}}</td>
++        <td>
++            <a href="{{book.PDF.url}}" class="btn btn-primary btn-sm" target="_blank">Download PDF</a>
++        </td>
++        <td>
++            <form method="post" action="{% url 'edit_book' book.pk %}">
++                {% csrf_token %}
++                <button type="submit" class="btn btn-danger btn-sm">Edit</button>
++            </form>
++        </td>
++        <td>
++            <form method="post" action="{% url 'delete_book' book.pk %}">
++                {% csrf_token %}
++                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
++            </form>
++        </td>
++    </tr>
++    {% endfor %}
++    </tbody>
+ 
+-    </table>
++</table>
+ 
+ {% endblock %}
+\ No newline at end of file
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+new file mode 100644
+--- /dev/null	
++++ b/.idea/misc.xml	
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.9" project-jdk-type="Python SDK" />
++  <component name="PyCharmProfessionalAdvertiser">
++    <option name="shown" value="true" />
++  </component>
++</project>
+\ No newline at end of file
